@@ -4,7 +4,6 @@ const ITEMS_KEY = 'action_items';
 const SETTINGS_KEY = 'app_settings';
 
 export interface AppSettings {
-  groqKey: string;
   openrouterKey: string;
 }
 
@@ -24,12 +23,15 @@ export function saveItems(items: ActionItem[]): void {
 }
 
 export function loadSettings(): AppSettings {
-  if (typeof window === 'undefined') return { groqKey: '', openrouterKey: '' };
+  if (typeof window === 'undefined') return { openrouterKey: '' };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw ? JSON.parse(raw) : { groqKey: '', openrouterKey: '' };
+    if (!raw) return { openrouterKey: '' };
+    const parsed = JSON.parse(raw);
+    // migrate: drop legacy groqKey field
+    return { openrouterKey: parsed.openrouterKey ?? '' };
   } catch {
-    return { groqKey: '', openrouterKey: '' };
+    return { openrouterKey: '' };
   }
 }
 
@@ -39,6 +41,5 @@ export function saveSettings(settings: AppSettings): void {
 }
 
 export function hasSettings(): boolean {
-  const s = loadSettings();
-  return Boolean(s.groqKey && s.openrouterKey);
+  return Boolean(loadSettings().openrouterKey);
 }

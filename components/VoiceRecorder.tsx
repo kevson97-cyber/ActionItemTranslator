@@ -1,91 +1,120 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface Props {
-  groqKey: string;
-  onTranscript: (text: string) => void;
-  onNeedSettings: () => void;
+  currentText: string;
+  onTextChange: (text: string) => void;
 }
 
-export default function VoiceRecorder({ groqKey, onTranscript, onNeedSettings }: Props) {
+// SpeechRecognition is not in TypeScript's standard DOM lib — use any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SR = any;
+
+function getSRConstructor(): SR | null {
+  if (typeof window === 'undefined') return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+export default function VoiceRecorder({ currentText, onTextChange }: Props) {
   const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
+  const [supported, setSupported] = useState(true);
   const [error, setError] = useState('');
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
 
-  const start = async () => {
-    if (!groqKey) {
-      onNeedSettings();
-      return;
-    }
+  const recognitionRef = useRef<SR>(null);
+  const baseTextRef = useRef('');       // textarea text before recording started
+  const finalSegmentsRef = useRef(''); // all finalized speech this session
+
+  useEffect(() => {
+    setSupported(getSRConstructor() !== null);
+  }, []);
+
+  const buildText = (finals: string, interim: string) => {
+    const base = baseTextRef.current;
+    const appended = (finals + interim).trim();
+    if (!appended) return base;
+    return base ? `${base}\n${appended}` : appended;
+  };
+
+  const start = useCallback(() => {
+    const SRClass = getSRConstructor();
+    if (!SRClass) return;
     setError('');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      chunksRef.current = [];
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
+    baseTextRef.current = currentText;
+    finalSegmentsRef.current = '';
 
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        await transcribe(blob);
-      };
+    const recognition = new SRClass();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
 
-      recorder.start();
-      recorderRef.current = recorder;
-      setRecording(true);
-    } catch {
-      setError('Microphone access denied — check browser permissions');
-    }
-  };
+    recognition.onresult = (event: SR) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript as string;
+        if (event.results[i].isFinal) {
+          finalSegmentsRef.current += t + ' ';
+        } else {
+          interim += t;
+        }
+      }
+      onTextChange(buildText(finalSegmentsRef.current, interim));
+    };
 
-  const stop = () => {
-    recorderRef.current?.stop();
-    setRecording(false);
-  };
+    recognition.onerror = (event: SR) => {
+      if (event.error !== 'aborted') setError(`Mic error: ${event.error}`);
+      setRecording(false);
+    };
 
-  const transcribe = async (blob: Blob) => {
-    setTranscribing(true);
-    try {
-      const form = new FormData();
-      form.append('file', blob, 'recording.webm');
-      const res = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: { 'x-groq-key': groqKey },
-        body: form,
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      onTranscript(data.text);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Transcription failed');
-    } finally {
-      setTranscribing(false);
-    }
-  };
+    recognition.onend = () => {
+      onTextChange(buildText(finalSegmentsRef.current, ''));
+      setRecording(false);
+    };
+
+    recognition.start();
+    setRecording(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentText, onTextChange]);
+
+  const stop = useCallback(() => {
+    recognitionRef.current?.stop();
+  }, []);
+
+  if (!supported) {
+    return (
+      <p className="text-xs text-white/30 mb-3">
+        Voice input requires Chrome or Safari.
+      </p>
+    );
+  }
 
   return (
     <div className="mb-3">
       <button
         onClick={recording ? stop : start}
-        disabled={transcribing}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
           recording
-            ? 'bg-red-500 text-white animate-pulse'
+            ? 'bg-red-500 text-white'
             : 'bg-[#1e2535] text-white hover:bg-[#252d40]'
         }`}
       >
-        {recording ? '⏹ Stop recording' : '🎤 Record voice'}
+        {recording ? (
+          <>
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse inline-block" />
+            Stop recording
+          </>
+        ) : (
+          '🎤 Record voice'
+        )}
       </button>
-      {transcribing && (
-        <p className="text-xs text-white/40 mt-2">Transcribing with Whisper large-v3…</p>
+      {recording && (
+        <p className="text-xs text-white/40 mt-1.5">Listening… speak now</p>
       )}
-      {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+      {error && <p className="text-xs text-red-400 mt-1.5">{error}</p>}
     </div>
   );
 }

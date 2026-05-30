@@ -19,7 +19,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settings, setSettings] = useState({ groqKey: '', openrouterKey: '' });
+  const [settings, setSettings] = useState({ openrouterKey: '' });
 
   useEffect(() => {
     setItems(loadItems());
@@ -120,7 +120,7 @@ export default function Home() {
   const nMedium = items.filter((i) => i.priority === 'medium').length;
   const nLow = items.filter((i) => i.priority === 'low').length;
   const nTasks = items.reduce((s, i) => s + i.tasks.length, 0);
-  const keysConfigured = Boolean(settings.groqKey && settings.openrouterKey);
+  const keysConfigured = Boolean(settings.openrouterKey);
 
   return (
     <>
@@ -159,9 +159,8 @@ export default function Home() {
         <h2 className="text-xs font-semibold text-white/40 mb-3 uppercase tracking-wider">Input</h2>
 
         <VoiceRecorder
-          groqKey={settings.groqKey}
-          onTranscript={(t) => setText((prev) => (prev ? `${prev}\n${t}` : t))}
-          onNeedSettings={() => setSettingsOpen(true)}
+          currentText={text}
+          onTextChange={setText}
         />
 
         <textarea
