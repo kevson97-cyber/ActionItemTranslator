@@ -7,7 +7,6 @@ interface Props {
   onTextChange: (text: string) => void;
 }
 
-// SpeechRecognition is not in TypeScript's standard DOM lib — use any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SR = any;
 
@@ -26,7 +25,7 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
   const recognitionRef = useRef<SR>(null);
   const baseTextRef = useRef('');
   const finalSegmentsRef = useRef('');
-  const isStoppingRef = useRef(false); // true only when user explicitly taps Stop
+  const isStoppingRef = useRef(false);
 
   useEffect(() => {
     setSupported(getSRConstructor() !== null);
@@ -48,55 +47,63 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
     finalSegmentsRef.current = '';
     isStoppingRef.current = false;
 
-    const recognition = new SRClass();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-    recognitionRef.current = recognition;
+    // Each call creates a fresh SpeechRecognition instance.
+    // Using continuous: false so sessions are short and bounded — on restart we
+    // create a NEW instance, which has no audio buffer from the previous session.
+    // This prevents both iOS and Android from re-processing already-transcribed audio.
+    const launchSession = () => {
+      const SRC = getSRConstructor();
+      if (!SRC || isStoppingRef.current) return;
 
-    recognition.onresult = (event: SR) => {
-      // Iterate ALL results from 0 (not event.resultIndex) — on iOS Safari,
-      // resultIndex is always 0, causing duplicate appends if we increment.
-      // Rebuilding from the full results list is always correct.
-      let finals = '';
-      let interim = '';
-      for (let i = 0; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript as string;
-        if (event.results[i].isFinal) {
-          finals += t + ' ';
-        } else {
-          interim += t;
+      const recognition = new SRC();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognitionRef.current = recognition;
+
+      recognition.onresult = (event: SR) => {
+        let finals = '';
+        let interim = '';
+        for (let i = 0; i < event.results.length; i++) {
+          const t = event.results[i][0].transcript as string;
+          if (event.results[i].isFinal) {
+            finals += t + ' ';
+          } else {
+            interim += t;
+          }
         }
-      }
-      finalSegmentsRef.current = finals; // replace, not append
-      onTextChange(buildText(finals, interim));
-    };
+        finalSegmentsRef.current = finals;
+        onTextChange(buildText(finals, interim));
+      };
 
-    recognition.onerror = (event: SR) => {
-      if (event.error !== 'aborted') setError(`Mic error: ${event.error}`);
-      setRecording(false);
-    };
-
-    recognition.onend = () => {
-      if (isStoppingRef.current) {
-        // User tapped Stop — commit finals and done
-        onTextChange(buildText(finalSegmentsRef.current, ''));
+      recognition.onerror = (event: SR) => {
+        if (event.error !== 'aborted') setError(`Mic error: ${event.error}`);
         setRecording(false);
-      } else {
-        // iOS ended the session automatically (it doesn't truly support continuous mode).
-        // Commit the finals into baseText and restart so the next speech segment
-        // doesn't re-process the same words.
-        baseTextRef.current = buildText(finalSegmentsRef.current, '');
-        finalSegmentsRef.current = '';
-        try {
-          recognition.start();
-        } catch {
+      };
+
+      recognition.onend = () => {
+        if (isStoppingRef.current) {
+          // User tapped Stop — commit the last finals and finish
+          onTextChange(buildText(finalSegmentsRef.current, ''));
           setRecording(false);
+        } else {
+          // Session ended naturally (silence/pause) — commit finals into base
+          // and launch a NEW instance so the next session starts with a clean
+          // audio buffer and cannot replay words from this session.
+          baseTextRef.current = buildText(finalSegmentsRef.current, '');
+          finalSegmentsRef.current = '';
+          launchSession();
         }
+      };
+
+      try {
+        recognition.start();
+      } catch {
+        setRecording(false);
       }
     };
 
-    recognition.start();
+    launchSession();
     setRecording(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentText, onTextChange]);
