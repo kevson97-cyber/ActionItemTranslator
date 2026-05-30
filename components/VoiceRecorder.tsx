@@ -53,16 +53,21 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
     recognitionRef.current = recognition;
 
     recognition.onresult = (event: SR) => {
+      // Iterate ALL results from 0 (not event.resultIndex) — on iOS Safari,
+      // resultIndex is always 0, causing duplicate appends if we increment.
+      // Rebuilding from the full results list is always correct.
+      let finals = '';
       let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         const t = event.results[i][0].transcript as string;
         if (event.results[i].isFinal) {
-          finalSegmentsRef.current += t + ' ';
+          finals += t + ' ';
         } else {
           interim += t;
         }
       }
-      onTextChange(buildText(finalSegmentsRef.current, interim));
+      finalSegmentsRef.current = finals; // replace, not append
+      onTextChange(buildText(finals, interim));
     };
 
     recognition.onerror = (event: SR) => {
