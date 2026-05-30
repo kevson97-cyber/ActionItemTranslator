@@ -53,11 +53,12 @@ export default function Home() {
       if (data.error) throw new Error(data.error);
 
       const newItems: ActionItem[] = data.items.map(
-        (item: Omit<ActionItem, 'id' | 'createdAt'>) => ({
+        (item: Omit<ActionItem, 'id' | 'createdAt' | 'done'>) => ({
           id: uid(),
           title: item.title,
           description: item.description,
           priority: item.priority,
+          done: false,
           tasks: item.tasks,
           createdAt: new Date().toISOString(),
         })
@@ -74,19 +75,16 @@ export default function Home() {
     }
   };
 
-  const toggleTask = (itemId: string, taskIndex: number) => {
-    const updated = items.map((item) =>
-      item.id === itemId
-        ? {
-            ...item,
-            tasks: item.tasks.map((t, i) =>
-              i === taskIndex ? { ...t, done: !t.done } : t
-            ),
-          }
-        : item
-    );
-    setItems(updated);
-    saveItems(updated);
+  const updateItem = (updated: ActionItem) => {
+    const next = items.map((item) => (item.id === updated.id ? updated : item));
+    setItems(next);
+    saveItems(next);
+  };
+
+  const deleteItem = (id: string) => {
+    const next = items.filter((item) => item.id !== id);
+    setItems(next);
+    saveItems(next);
   };
 
   const clear = () => {
@@ -229,7 +227,8 @@ export default function Home() {
               <ActionItemCard
                 key={item.id}
                 item={item}
-                onToggleTask={(idx) => toggleTask(item.id, idx)}
+                onChange={updateItem}
+                onDelete={() => deleteItem(item.id)}
               />
             ))}
           </>

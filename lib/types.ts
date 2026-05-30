@@ -8,6 +8,7 @@ export interface ActionItem {
   title: string;
   description: string;
   priority: 'high' | 'medium' | 'low';
+  done: boolean;
   tasks: Task[];
   createdAt: string;
 }
