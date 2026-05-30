@@ -1,0 +1,27 @@
+# Python
+.env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Logs & runtime outputs
+*.txt
+*.log
+run_bg_log.txt
+
+# Next.js
+.next/
+out/
+node_modules/
+.env.local
+.env.*.local
+next-env.d.ts
+
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+public/swe-worker-*.js
+public/sw.js.map
+public/workbox-*.js.map

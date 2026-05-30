@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Action Items</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b27;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8eaf0;
+    --muted: rgba(255,255,255,0.4);
+    --blue: #4f8ef7;
+    --purple: #6c63ff;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --green: #22c55e;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .app { display: flex; flex-direction: column; min-height: 100dvh; max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .logo { font-size: 18px; font-weight: 700; }
+  .logo span { opacity: .45; font-weight: 400; font-size: 14px; margin-left: 8px; }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+  }
+  .status-dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  /* ── Input card ── */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  textarea {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 15px; font-family: inherit;
+    resize: none; line-height: 1.6; min-height: 120px;
+  }
+  textarea::placeholder { color: var(--muted); }
+
+  .input-actions {
+    display: flex; gap: 10px; margin-top: 12px;
+    border-top: 1px solid var(--border); padding-top: 12px;
+  }
+
+  /* ── Buttons ── */
+  button {
+    font-family: inherit; cursor: pointer;
+    border-radius: 8px; border: none;
+    font-size: 14px; font-weight: 500;
+    transition: transform .1s ease, opacity .1s ease, box-shadow .15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:active { transform: scale(0.94); }
+
+  .btn-primary {
+    flex: 1;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: #fff; padding: 11px 20px;
+    box-shadow: 0 2px 12px rgba(79,142,247,0.3);
+  }
+  .btn-primary:active { box-shadow: 0 0 0 3px rgba(99,102,241,.35); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  .btn-mic {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text); padding: 11px 16px;
+    font-size: 18px; min-width: 52px;
+  }
+  .btn-mic.recording {
+    background: rgba(239,68,68,.15);
+    border-color: var(--red);
+    animation: mic-pulse 1s ease infinite;
+  }
+  @keyframes mic-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
+    50%      { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted); padding: 8px 14px;
+    font-size: 13px;
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+  .btn-icon {
+    background: transparent; border: none;
+    color: var(--muted); padding: 6px; font-size: 16px;
+    border-radius: 6px;
+  }
+  .btn-icon:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+  /* ── Loader ── */
+  .loader {
+    display: none; text-align: center;
+    padding: 32px 0; color: var(--muted); font-size: 14px;
+  }
+  .loader.show { display: block; }
+  .loader-dots span {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--blue); margin: 0 3px;
+    animation: bounce .9s ease infinite;
+  }
+  .loader-dots span:nth-child(2) { animation-delay: .15s; }
+  .loader-dots span:nth-child(3) { animation-delay: .30s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
+
+  /* ── Results ── */
+  .results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .results-title { font-size: 13px; font-weight: 600; opacity: .5; text-transform: uppercase; letter-spacing: .05em; }
+  .results-actions { display: flex; gap: 8px; }
+
+  .action-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: border-color .2s;
+  }
+  .action-card.done-card { opacity: .5; }
+
+  .card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .card-check {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0; cursor: pointer; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s; background: transparent; font-size: 11px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card-check:active { transform: scale(0.9); }
+  .card-check.checked { background: var(--green); border-color: var(--green); color: #fff; }
+
+  .card-title { font-size: 15px; font-weight: 600; flex: 1; line-height: 1.4; }
+  .card-title.done-text { text-decoration: line-through; opacity: .5; }
+
+  .badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .04em;
+    padding: 2px 8px; border-radius: 20px; flex-shrink: 0; margin-top: 3px;
+  }
+  .badge-high   { background: rgba(239,68,68,.18);  color: #f87171; }
+  .badge-medium { background: rgba(245,158,11,.18); color: #fbbf24; }
+  .badge-low    { background: rgba(34,197,94,.18);  color: #4ade80; }
+
+  .card-desc { font-size: 13px; opacity: .5; margin-bottom: 10px; line-height: 1.5; padding-left: 30px; }
+
+  .task-list { padding-left: 30px; }
+  .task-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-check {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0; margin-top: 2px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; background: transparent; transition: all .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .task-check:active { transform: scale(0.88); }
+  .task-check.checked { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .task-text { font-size: 13px; opacity: .75; line-height: 1.5; flex: 1; }
+  .task-text.done-text { text-decoration: line-through; opacity: .35; }
+
+  /* ── History ── */
+  .section-divider {
+    border: none; border-top: 1px solid var(--border);
+    margin: 24px 0 20px;
+  }
+
+  .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .history-item:active { border-color: rgba(255,255,255,0.2); }
+
+  .history-info { flex: 1; min-width: 0; }
+  .history-title { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-meta { font-size: 12px; opacity: .4; margin-top: 2px; }
+
+  /* ── Empty states ── */
+  .empty {
+    text-align: center; padding: 40px 20px;
+    color: var(--muted); font-size: 14px; line-height: 1.8;
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: .5; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: #1e2433; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 8px 20px; font-size: 13px;
+    transition: transform .3s ease; z-index: 999; white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Transcript banner ── */
+  .transcript-banner {
+    background: rgba(79,142,247,0.1);
+    border: 1px solid rgba(79,142,247,0.2);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; margin-bottom: 8px; display: none;
+  }
+  .transcript-banner.show { display: block; }
+  .transcript-label { font-size: 11px; opacity: .5; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">✅ Action Items <span id="statusText">checking…</span></div>
+    <div class="status-dot offline" id="statusDot"></div>
+  </header>
+
+  <!-- Input -->
+  <div class="input-card">
+    <div class="transcript-banner" id="transcriptBanner">
+      <div class="transcript-label">🎤 Voice transcription</div>
+      <div id="transcriptText"></div>
+    </div>
+    <textarea id="inputText" placeholder="Paste meeting notes, a task dump, or describe what needs to get done…" rows="5"></textarea>
+    <div class="input-actions">
+      <button class="btn-mic" id="micBtn" title="Voice input" onclick="toggleMic()">🎤</button>
+      <button class="btn-primary" id="analyzeBtn" onclick="analyze()" disabled>⚡ Extract Action Items</button>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div class="loader" id="loader">
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+    <div style="margin-top:12px;font-size:13px">Analysing…</div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" style="display:none">
+    <div class="results-header">
+      <div class="results-title" id="resultsCount"></div>
+      <div class="results-actions">
+        <button class="btn-ghost" onclick="exportMd()">⬇ Export</button>
+        <button class="btn-ghost" onclick="saveSession()">💾 Save</button>
+        <button class="btn-ghost" onclick="clearResults()">✕ Clear</button>
+      </div>
+    </div>
+    <div id="resultsList"></div>
+  </div>
+
+  <!-- History -->
+  <div id="historySection">
+    <hr class="section-divider">
+    <div class="results-header">
+      <div class="results-title">Saved Sessions</div>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentItems = [];
+let currentInput = '';
+let recognition = null;
+let isRecording = false;
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  checkStatus();
+  loadHistory();
+  document.getElementById('inputText').addEventListener('input', onInputChange);
+});
+
+function onInputChange() {
+  const val = document.getElementById('inputText').value.trim();
+  document.getElementById('analyzeBtn').disabled = !val;
+}
+
+// ── Status ───────────────────────────────────────────────────────────────────
+async function checkStatus() {
+  try {
+    const r = await fetch('/status');
+    const d = await r.json();
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    if (d.ollama) {
+      dot.classList.remove('offline');
+      txt.textContent = d.model;
+    } else {
+      dot.classList.add('offline');
+      txt.textContent = 'Ollama offline';
+    }
+  } catch {
+    document.getElementById('statusText').textContent = 'server offline';
+  }
+}
+
+// ── Voice ─────────────────────────────────────────────────────────────────────
+function toggleMic() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    toast('Speech recognition not supported in this browser');
+    return;
+  }
+  if (isRecording) {
+    recognition && recognition.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  isRecording = true;
+  document.getElementById('micBtn').classList.add('recording');
+  document.getElementById('micBtn').textContent = '⏹';
+
+  recognition.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    const ta = document.getElementById('inputText');
+    ta.value = ta.value ? ta.value + ' ' + text : text;
+    onInputChange();
+    // Show transcript banner
+    document.getElementById('transcriptText').textContent = text;
+    document.getElementById('transcriptBanner').classList.add('show');
+    setTimeout(() => document.getElementById('transcriptBanner').classList.remove('show'), 4000);
+  };
+  recognition.onerror = (e) => {
+    toast('Mic error: ' + e.error);
+    stopMic();
+  };
+  recognition.onend = stopMic;
+  recognition.start();
+}
+
+function stopMic() {
+  isRecording = false;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+}
+
+// ── Analyze ───────────────────────────────────────────────────────────────────
+async function analyze() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) return;
+  currentInput = text;
+
+  document.getElementById('loader').classList.add('show');
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = true;
+
+  try {
+    const r = await fetch('/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text}),
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || 'Server error');
+    }
+    const data = await r.json();
+    currentItems = data.items;
+    renderResults();
+  } catch (e) {
+    toast('Error: ' + e.message);
+  } finally {
+    document.getElementById('loader').classList.remove('show');
+    document.getElementById('analyzeBtn').disabled = false;
+  }
+}
+
+// ── Render results ─────────────────────────────────────────────────────────
+function renderResults(sessionId = null) {
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+
+  if (!currentItems.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">🤷</div>No action items found</div>';
+    document.getElementById('resultsSection').style.display = 'block';
+    return;
+  }
+
+  // Sort: high → medium → low, incomplete first
+  const order = {high:0, medium:1, low:2};
+  const sorted = [...currentItems].sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return (order[a.priority]||1) - (order[b.priority]||1);
+  });
+
+  const n = currentItems.length;
+  const nTasks = currentItems.reduce((s,i) => s + i.tasks.length, 0);
+  document.getElementById('resultsCount').textContent =
+    `${n} action item${n!==1?'s':''} · ${nTasks} sub-task${nTasks!==1?'s':''}`;
+
+  sorted.forEach((item, idx) => {
+    const origIdx = currentItems.indexOf(item);
+    const el = document.createElement('div');
+    el.className = 'action-card' + (item.done ? ' done-card' : '');
+    el.dataset.idx = origIdx;
+
+    const tasksHtml = item.tasks.map((t, ti) => `
+      <div class="task-item">
+        <div class="task-check ${t.done?'checked':''}" onclick="toggleTask(${origIdx},${ti})">
+          ${t.done ? '✓' : ''}
+        </div>
+        <div class="task-text ${t.done?'done-text':''}">${escHtml(t.task)}</div>
+      </div>
+    `).join('');
+
+    el.innerHTML = `
+      <div class="card-top">
+        <div class="card-check ${item.done?'checked':''}" onclick="toggleItem(${origIdx})">${item.done?'✓':''}</div>
+        <div class="card-title ${item.done?'done-text':''}">${escHtml(item.title)}</div>
+        <span class="badge badge-${item.priority}">${item.priority.toUpperCase()}</span>
+      </div>
+      ${item.description ? `<div class="card-desc">${escHtml(item.description)}</div>` : ''}
+      ${tasksHtml ? `<div class="task-list">${tasksHtml}</div>` : ''}
+    `;
+    list.appendChild(el);
+  });
+
+  document.getElementById('resultsSection').style.display = 'block';
+
+  if (sessionId) autoSave(sessionId);
+}
+
+function toggleItem(idx) {
+  currentItems[idx].done = !currentItems[idx].done;
+  renderResults();
+}
+
+function toggleTask(itemIdx, taskIdx) {
+  currentItems[itemIdx].tasks[taskIdx].done = !currentItems[itemIdx].tasks[taskIdx].done;
+  renderResults();
+}
+
+function clearResults() {
+  currentItems = [];
+  currentInput = '';
+  document.getElementById('inputText').value = '';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('transcriptBanner').classList.remove('show');
+}
+
+// ── Save / History ────────────────────────────────────────────────────────────
+async function saveSession() {
+  if (!currentItems.length) return;
+  const title = currentInput.slice(0, 60) + (currentInput.length > 60 ? '…' : '');
+  try {
+    const r = await fetch('/sessions', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({title, input_text: currentInput, items: currentItems}),
+    });
+    if (!r.ok) throw new Error('Save failed');
+    toast('✓ Saved');
+    loadHistory();
+  } catch (e) {
+    toast('Save error: ' + e.message);
+  }
+}
+
+let autoSaveId = null;
+async function autoSave(sessionId) {
+  clearTimeout(autoSaveId);
+  autoSaveId = setTimeout(async () => {
+    await fetch(`/sessions/${sessionId}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({items: currentItems}),
+    });
+  }, 800);
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch('/sessions');
+    const sessions = await r.json();
+    renderHistory(sessions);
+  } catch {}
+}
+
+function renderHistory(sessions) {
+  const el = document.getElementById('historyList');
+  if (!sessions.length) {
+    el.innerHTML = '<div class="empty" style="padding:16px 0"><div style="font-size:13px;opacity:.35">No saved sessions yet</div></div>';
+    return;
+  }
+  el.innerHTML = sessions.map(s => {
+    const date = new Date(s.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    const n = s.items.length;
+    const done = s.items.filter(i => i.done).length;
+    return `
+      <div class="history-item" onclick="loadSession('${s.id}')">
+        <div class="history-info">
+          <div class="history-title">${escHtml(s.title)}</div>
+          <div class="history-meta">${date} · ${done}/${n} done</div>
+        </div>
+        <button class="btn-icon" onclick="event.stopPropagation();deleteSession('${s.id}')" title="Delete">🗑</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadSession(id) {
+  try {
+    const r = await fetch('/sessions');
+    const sessions = await r.json();
+    const s = sessions.find(x => x.id === id);
+    if (!s) return;
+    currentItems = s.items;
+    currentInput = s.input_text;
+    document.getElementById('inputText').value = s.input_text;
+    onInputChange();
+    renderResults(id);
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  } catch (e) {
+    toast('Load error: ' + e.message);
+  }
+}
+
+async function deleteSession(id) {
+  await fetch(`/sessions/${id}`, {method: 'DELETE'});
+  loadHistory();
+  toast('Deleted');
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function exportMd() {
+  if (!currentItems.length) return;
+  const lines = ['# Action Items\n'];
+  currentItems.forEach((item, i) => {
+    lines.push(`## ${i+1}. ${item.title} [${item.priority.toUpperCase()}]`);
+    if (item.description) lines.push(`*${item.description}*`);
+    item.tasks.forEach(t => lines.push(`- [${t.done?'x':' '}] ${t.task}`));
+    lines.push('');
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'action-items.md';
+  a.click();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function toast(msg, duration = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+</script>
+</body>
+</html>
