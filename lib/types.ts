@@ -11,4 +11,5 @@ export interface ActionItem {
   done: boolean;
   tasks: Task[];
   createdAt: string;
+  date: string; // YYYY-MM-DD — the day this item belongs to
 }

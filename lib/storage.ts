@@ -11,7 +11,13 @@ export function loadItems(): ActionItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(ITEMS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    // migrate: backfill date from createdAt for items that predate the date field
+    return parsed.map((item: ActionItem) => ({
+      ...item,
+      date: item.date ?? item.createdAt.slice(0, 10),
+    }));
   } catch {
     return [];
   }

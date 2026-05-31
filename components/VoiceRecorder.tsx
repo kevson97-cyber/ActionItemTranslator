@@ -115,7 +115,7 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
 
   if (!supported) {
     return (
-      <p className="text-xs text-white/30 mb-3">
+      <p className="text-xs text-white/20 mb-3">
         Voice input requires Chrome or Safari.
       </p>
     );
@@ -125,10 +125,10 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
     <div className="mb-3">
       <button
         onClick={recording ? stop : start}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all border ${
           recording
-            ? 'bg-red-500 text-white'
-            : 'bg-[#1e2535] text-white hover:bg-[#252d40]'
+            ? 'bg-red-950/40 border-[#f87171]/25 text-[#f87171]'
+            : 'bg-[#0d1117] border-white/[0.08] text-white/55 hover:text-white/80 hover:border-white/[0.14]'
         }`}
       >
         {recording ? (
@@ -141,7 +141,7 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
         )}
       </button>
       {recording && (
-        <p className="text-xs text-white/40 mt-1.5">Listening… speak now</p>
+        <p className="text-xs text-[#4f8ef7]/50 mt-1.5">Listening… speak now</p>
       )}
       {error && <p className="text-xs text-red-400 mt-1.5">{error}</p>}
     </div>
