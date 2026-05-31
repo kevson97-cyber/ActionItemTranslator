@@ -174,7 +174,7 @@ export default function Home() {
           >
             <GearIcon />
           </button>
-          <h1 className="text-[24px] font-bold tracking-tight text-[#e8edf5]">Action Items</h1>
+          <h1 className="text-[26px] font-extrabold tracking-tight text-[#e8edf5] font-[family-name:var(--font-syne)]">Action Items</h1>
           <p className="text-[12px] text-white/35 mt-1.5">Use voice or manual input for action items</p>
         </div>
 

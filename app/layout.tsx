@@ -1,5 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import { Syne } from 'next/font/google';
 import './globals.css';
+
+const syne = Syne({
+  subsets: ['latin'],
+  weight: ['800'],
+  variable: '--font-syne',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Action Item Translator',
@@ -22,7 +30,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={syne.variable}>
       <head>
         <link rel="apple-touch-icon" href="/icon.svg" />
       </head>
