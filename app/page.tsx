@@ -52,6 +52,7 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState({ openrouterKey: '' });
   const [selectedDate, setSelectedDate] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     setItems(loadItems());
@@ -174,7 +175,7 @@ export default function Home() {
           >
             <GearIcon />
           </button>
-          <h1 className="text-[24px] font-bold italic text-[#1e1b4b] font-[family-name:var(--font-playfair)]">
+          <h1 className="text-[30px] font-bold italic bg-gradient-to-r from-[#7c3aed] to-[#a855f7] bg-clip-text text-transparent font-[family-name:var(--font-playfair)]">
             Action Items
           </h1>
           <p className="text-[12px] text-[#6b7280] mt-1.5">Use voice or manual input for action items</p>
@@ -279,7 +280,7 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={clearItems}
+                  onClick={() => setConfirmOpen(true)}
                   className="text-[11px] font-semibold text-[#dc2626] bg-[#fee2e2] hover:bg-[#fecaca] px-3 py-1 rounded-full transition-colors"
                 >
                   Clear
@@ -319,6 +320,32 @@ export default function Home() {
         )}
 
       </main>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-[#1e1b4b]/20 backdrop-blur-sm" onClick={() => setConfirmOpen(false)} />
+          <div className="relative bg-white border border-[#ede9fe] rounded-2xl p-6 w-full max-w-sm shadow-[0_8px_32px_rgba(124,58,237,0.15)]">
+            <h3 className="text-[15px] font-semibold text-[#1e1b4b] mb-1">Clear action items?</h3>
+            <p className="text-[13px] text-[#6b7280] mb-5">
+              This will remove all items for {formatDate(effectiveDate)}. This can&apos;t be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="flex-1 px-4 py-2.5 bg-[#f3f4f6] hover:bg-[#e5e7eb] text-[#6b7280] text-sm font-medium rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { clearItems(); setConfirmOpen(false); }}
+                className="flex-1 px-4 py-2.5 bg-[#fee2e2] hover:bg-[#fecaca] text-[#dc2626] text-sm font-semibold rounded-xl transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SettingsModal
         open={settingsOpen}
