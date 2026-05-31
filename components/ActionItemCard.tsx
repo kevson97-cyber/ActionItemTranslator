@@ -4,21 +4,21 @@ import { useState, useRef, KeyboardEvent } from 'react';
 import { ActionItem } from '../lib/types';
 
 const PRIORITY_STRIP: Record<string, string> = {
-  high:   'bg-[#f87171]',
-  medium: 'bg-[#fbbf24]',
-  low:    'bg-[#34d399]',
+  high:   'bg-[#ef4444]',
+  medium: 'bg-[#f59e0b]',
+  low:    'bg-[#10b981]',
 };
 
 const BADGE: Record<string, string> = {
-  high:   'bg-red-950/50 text-[#f87171]',
-  medium: 'bg-amber-950/50 text-[#fbbf24]',
-  low:    'bg-emerald-950/50 text-[#34d399]',
+  high:   'bg-[#fee2e2] text-[#dc2626]',
+  medium: 'bg-[#fef3c7] text-[#d97706]',
+  low:    'bg-[#d1fae5] text-[#059669]',
 };
 
 const PRIORITY_BTN_ACTIVE: Record<string, string> = {
-  high:   'bg-red-950/60 text-[#f87171]',
-  medium: 'bg-amber-950/60 text-[#fbbf24]',
-  low:    'bg-emerald-950/60 text-[#34d399]',
+  high:   'bg-[#fee2e2] text-[#dc2626]',
+  medium: 'bg-[#fef3c7] text-[#d97706]',
+  low:    'bg-[#d1fae5] text-[#059669]',
 };
 
 const PRIORITIES = ['high', 'medium', 'low'] as const;
@@ -83,7 +83,7 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
     const faded = item.done || allDone;
 
     return (
-      <div className={`relative bg-[#0d1117] border border-white/[0.06] rounded-2xl mb-3 overflow-hidden shadow-[0_1px_8px_rgba(0,0,0,0.4)] transition-opacity ${faded ? 'opacity-40' : ''}`}>
+      <div className={`relative bg-white border border-[#ede9fe] rounded-2xl mb-3 overflow-hidden shadow-[0_2px_8px_rgba(124,58,237,0.07)] transition-opacity ${faded ? 'opacity-40' : ''}`}>
         {/* Priority strip */}
         <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${PRIORITY_STRIP[item.priority] ?? PRIORITY_STRIP.medium}`} />
 
@@ -94,11 +94,11 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
               type="checkbox"
               checked={item.done}
               onChange={toggleDone}
-              className="mt-[2px] flex-shrink-0 w-[15px] h-[15px] accent-[#4f8ef7] cursor-pointer"
+              className="mt-[2px] flex-shrink-0 w-[15px] h-[15px] accent-[#7c3aed] cursor-pointer"
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`font-semibold text-[15px] leading-snug text-[#e8edf5] ${item.done ? 'line-through text-white/30' : ''}`}>
+                <span className={`font-semibold text-[15px] leading-snug text-[#1e1b4b] ${item.done ? 'line-through text-[#9ca3af]' : ''}`}>
                   {item.title}
                 </span>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wide ${BADGE[item.priority] ?? BADGE.medium}`}>
@@ -106,12 +106,12 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
                 </span>
               </div>
               {item.description && (
-                <p className="text-[12.5px] text-white/40 mt-1 leading-relaxed">{item.description}</p>
+                <p className="text-[12.5px] text-[#6b7280] mt-1 leading-relaxed">{item.description}</p>
               )}
             </div>
             <button
               onClick={startEdit}
-              className="flex-shrink-0 text-white/15 hover:text-white/50 transition-colors p-1 -mr-1"
+              className="flex-shrink-0 text-[#9ca3af] hover:text-[#7c3aed] transition-colors p-1 -mr-1"
               aria-label="Edit"
             >
               <PencilIcon />
@@ -127,9 +127,9 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
                     type="checkbox"
                     checked={task.done}
                     onChange={() => toggleSubTask(i)}
-                    className="mt-[2px] flex-shrink-0 w-[14px] h-[14px] accent-[#4f8ef7] cursor-pointer"
+                    className="mt-[2px] flex-shrink-0 w-[14px] h-[14px] accent-[#7c3aed] cursor-pointer"
                   />
-                  <span className={`text-[12.5px] leading-snug ${task.done ? 'line-through text-white/20' : 'text-white/60'}`}>
+                  <span className={`text-[12.5px] leading-snug ${task.done ? 'line-through text-[#9ca3af]' : 'text-[#6b7280]'}`}>
                     {task.task}
                   </span>
                 </li>
@@ -143,7 +143,7 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
 
   /* ── EDIT MODE ── */
   return (
-    <div className="relative bg-[#0d1117] border border-[#4f8ef7]/25 rounded-2xl mb-3 overflow-hidden shadow-[0_1px_8px_rgba(0,0,0,0.4)]">
+    <div className="relative bg-white border border-[#c4b5fd] rounded-2xl mb-3 overflow-hidden shadow-[0_2px_12px_rgba(124,58,237,0.12)]">
       <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${PRIORITY_STRIP[draft.priority] ?? PRIORITY_STRIP.medium}`} />
 
       <div className="pl-5 pr-4 py-4">
@@ -153,14 +153,14 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
             type="checkbox"
             checked={draft.done}
             onChange={() => setDraft({ ...draft, done: !draft.done })}
-            className="mt-[10px] flex-shrink-0 w-[15px] h-[15px] accent-[#4f8ef7] cursor-pointer"
+            className="mt-[10px] flex-shrink-0 w-[15px] h-[15px] accent-[#7c3aed] cursor-pointer"
           />
           <div className="flex-1 min-w-0 space-y-2.5">
             <input
               type="text"
               value={draft.title}
               onChange={e => setDraft({ ...draft, title: e.target.value })}
-              className="w-full bg-[#07090f] border border-white/[0.08] rounded-xl px-3 py-2 text-[14px] font-semibold text-[#e8edf5] focus:outline-none focus:ring-1 focus:ring-[#4f8ef7]/40 placeholder:text-white/20"
+              className="w-full bg-[#faf8ff] border border-[#ddd6fe] rounded-xl px-3 py-2 text-[14px] font-semibold text-[#1e1b4b] focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/25 placeholder:text-[#9ca3af]"
               placeholder="Action item title"
             />
             <div className="flex gap-1.5">
@@ -171,7 +171,7 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
                   className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide transition-all ${
                     draft.priority === p
                       ? PRIORITY_BTN_ACTIVE[p]
-                      : 'bg-white/[0.05] text-white/25 hover:bg-white/[0.09]'
+                      : 'bg-[#f3f4f6] text-[#9ca3af] hover:bg-[#e5e7eb]'
                   }`}
                 >
                   {p}
@@ -181,7 +181,7 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
             <textarea
               value={draft.description}
               onChange={e => setDraft({ ...draft, description: e.target.value })}
-              className="w-full bg-[#07090f] border border-white/[0.08] rounded-xl px-3 py-2 text-[12.5px] text-white/60 focus:outline-none focus:ring-1 focus:ring-[#4f8ef7]/40 resize-none placeholder:text-white/20"
+              className="w-full bg-[#faf8ff] border border-[#ddd6fe] rounded-xl px-3 py-2 text-[12.5px] text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/25 resize-none placeholder:text-[#9ca3af]"
               placeholder="Description (optional)"
               rows={2}
             />
@@ -201,7 +201,7 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
                     tasks: draft.tasks.map((t, idx) => idx === i ? { ...t, done: !t.done } : t),
                   })
                 }
-                className="flex-shrink-0 w-[14px] h-[14px] accent-[#4f8ef7] cursor-pointer"
+                className="flex-shrink-0 w-[14px] h-[14px] accent-[#7c3aed] cursor-pointer"
               />
               <input
                 type="text"
@@ -212,11 +212,11 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
                     tasks: draft.tasks.map((t, idx) => idx === i ? { ...t, task: e.target.value } : t),
                   })
                 }
-                className="flex-1 bg-[#07090f] border border-white/[0.08] rounded-xl px-3 py-1.5 text-[12.5px] text-[#e8edf5] focus:outline-none focus:ring-1 focus:ring-[#4f8ef7]/40"
+                className="flex-1 bg-[#faf8ff] border border-[#ddd6fe] rounded-xl px-3 py-1.5 text-[12.5px] text-[#1e1b4b] focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/25"
               />
               <button
                 onClick={() => setDraft({ ...draft, tasks: draft.tasks.filter((_, idx) => idx !== i) })}
-                className="flex-shrink-0 text-white/20 hover:text-[#f87171] transition-colors px-1 text-sm"
+                className="flex-shrink-0 text-[#9ca3af] hover:text-[#ef4444] transition-colors px-1 text-sm"
                 aria-label="Remove"
               >
                 ✕
@@ -233,12 +233,12 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
               onChange={e => setNewTaskText(e.target.value)}
               onKeyDown={handleNewTaskKey}
               placeholder="Add sub-task…"
-              className="flex-1 bg-transparent border border-dashed border-white/[0.08] rounded-xl px-3 py-1.5 text-[12.5px] text-white/40 placeholder:text-white/20 focus:outline-none focus:border-[#4f8ef7]/35 focus:text-white/70"
+              className="flex-1 bg-transparent border border-dashed border-[#c4b5fd] rounded-xl px-3 py-1.5 text-[12.5px] text-[#6b7280] placeholder:text-[#9ca3af] focus:outline-none focus:border-[#7c3aed]"
             />
             {newTaskText.trim() && (
               <button
                 onClick={addSubTask}
-                className="flex-shrink-0 text-[#4f8ef7]/70 hover:text-[#4f8ef7] transition-colors text-sm font-medium px-1"
+                className="flex-shrink-0 text-[#7c3aed] hover:text-[#6d28d9] transition-colors text-sm font-medium px-1"
               >
                 Add
               </button>
@@ -250,19 +250,19 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
         <div className="flex gap-2 ml-6">
           <button
             onClick={save}
-            className="flex-1 bg-gradient-to-r from-[#4f8ef7] to-[#6366f1] text-white text-xs font-semibold py-2 rounded-xl active:scale-[0.98] transition-transform"
+            className="flex-1 bg-gradient-to-r from-[#7c3aed] to-[#a855f7] text-white text-xs font-semibold py-2 rounded-xl active:scale-[0.98] transition-transform shadow-[0_2px_8px_rgba(124,58,237,0.3)]"
           >
             Save
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="px-4 py-2 bg-white/[0.05] hover:bg-white/[0.09] text-white/40 text-xs rounded-xl transition-colors"
+            className="px-4 py-2 bg-[#f3f4f6] hover:bg-[#e5e7eb] text-[#6b7280] text-xs rounded-xl transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onDelete}
-            className="px-3 py-2 text-[#f87171]/50 hover:text-[#f87171] hover:bg-red-950/30 text-xs rounded-xl transition-colors"
+            className="px-3 py-2 text-[#dc2626]/60 hover:text-[#dc2626] hover:bg-[#fee2e2] text-xs rounded-xl transition-colors"
           >
             Delete
           </button>

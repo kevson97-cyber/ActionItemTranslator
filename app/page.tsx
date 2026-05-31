@@ -38,7 +38,7 @@ function GearIcon() {
 
 function CalendarIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="text-[#4f8ef7]/70 flex-shrink-0">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="text-[#7c3aed]/70 flex-shrink-0">
       <path d="M4.5 1a.5.5 0 0 1 .5.5V2h6v-.5a.5.5 0 0 1 1 0V2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h1v-.5a.5.5 0 0 1 .5-.5zM2 5v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5H2z"/>
     </svg>
   );
@@ -167,22 +167,24 @@ export default function Home() {
             onClick={() => setSettingsOpen(true)}
             className={`absolute right-0 top-0 p-2 rounded-xl transition-colors ${
               keysConfigured
-                ? 'text-white/20 hover:text-white/50 hover:bg-white/[0.05]'
-                : 'text-[#4f8ef7] hover:bg-[#4f8ef7]/10 animate-pulse'
+                ? 'text-[#1e1b4b]/25 hover:text-[#1e1b4b]/55 hover:bg-[#1e1b4b]/[0.05]'
+                : 'text-[#7c3aed] hover:bg-[#7c3aed]/10 animate-pulse'
             }`}
             aria-label="Settings"
           >
             <GearIcon />
           </button>
-          <h1 className="text-[26px] font-extrabold tracking-tight text-[#e8edf5] font-[family-name:var(--font-syne)]">Action Items</h1>
-          <p className="text-[12px] text-white/35 mt-1.5">Use voice or manual input for action items</p>
+          <h1 className="text-[24px] font-bold italic text-[#1e1b4b] font-[family-name:var(--font-playfair)]">
+            Action Items
+          </h1>
+          <p className="text-[12px] text-[#6b7280] mt-1.5">Use voice or manual input for action items</p>
         </div>
 
         {/* ── Keys warning ── */}
         {!keysConfigured && (
           <button
             onClick={() => setSettingsOpen(true)}
-            className="w-full mb-5 flex items-center gap-3 px-4 py-3 bg-[#4f8ef7]/[0.07] border border-[#4f8ef7]/20 rounded-2xl text-[#4f8ef7]/80 text-sm hover:bg-[#4f8ef7]/[0.11] transition-colors text-left"
+            className="w-full mb-5 flex items-center gap-3 px-4 py-3 bg-[#ede9fe] border border-[#c4b5fd] rounded-2xl text-[#7c3aed] text-sm hover:bg-[#ddd6fe] transition-colors text-left"
           >
             <span>🔑</span>
             <span>Add your OpenRouter API key to get started</span>
@@ -198,12 +200,12 @@ export default function Home() {
             onChange={e => setText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) analyze(); }}
             placeholder="Paste meeting notes, voice memo, or a task list…"
-            className="w-full h-36 bg-[#0a0e18] border border-white/[0.07] rounded-2xl p-4 pr-8 text-sm text-[#e8edf5] placeholder:text-white/18 resize-none focus:outline-none focus:ring-1 focus:ring-[#4f8ef7]/35 leading-relaxed"
+            className="w-full h-36 bg-[#faf8ff] border border-[#ddd6fe] rounded-2xl p-4 pr-8 text-sm text-[#1e1b4b] placeholder:text-[#9ca3af] resize-none focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/30 leading-relaxed"
           />
           {text && (
             <button
               onClick={clearText}
-              className="absolute top-2.5 right-3 text-white/20 hover:text-white/55 transition-colors text-sm leading-none"
+              className="absolute top-2.5 right-3 text-[#9ca3af] hover:text-[#6b7280] transition-colors text-sm leading-none"
               aria-label="Clear text"
             >
               ✕
@@ -213,9 +215,9 @@ export default function Home() {
 
         {/* ── Date picker ── */}
         <div className="flex items-center gap-2.5 mb-4">
-          <label className="relative flex items-center gap-2 px-3 py-2 bg-[#0d1117] border border-white/[0.08] rounded-xl cursor-pointer hover:border-white/[0.18] transition-colors group">
+          <label className="relative flex items-center gap-2 px-3 py-2 bg-white border border-[#ddd6fe] rounded-xl cursor-pointer hover:border-[#c4b5fd] transition-colors shadow-sm">
             <CalendarIcon />
-            <span className="text-[13px] text-[#e8edf5]/75 select-none">{formatDate(effectiveDate)}</span>
+            <span className="text-[13px] text-[#1e1b4b]/80 select-none">{formatDate(effectiveDate)}</span>
             <input
               type="date"
               value={effectiveDate}
@@ -226,7 +228,7 @@ export default function Home() {
           {effectiveDate !== today && (
             <button
               onClick={() => setSelectedDate(today)}
-              className="text-xs text-[#4f8ef7]/60 hover:text-[#4f8ef7] px-2.5 py-1.5 rounded-lg hover:bg-[#4f8ef7]/[0.08] transition-colors"
+              className="text-xs text-[#7c3aed] hover:text-[#6d28d9] px-2.5 py-1.5 rounded-lg hover:bg-[#ede9fe] transition-colors font-medium"
             >
               Today
             </button>
@@ -237,14 +239,14 @@ export default function Home() {
         <button
           onClick={analyze}
           disabled={!text.trim() || loading}
-          className="w-full bg-gradient-to-r from-[#4f8ef7] to-[#6366f1] text-white font-semibold text-sm py-3 rounded-2xl disabled:opacity-30 transition-opacity active:scale-[0.98] mb-6"
+          className="w-full bg-gradient-to-r from-[#7c3aed] to-[#a855f7] text-white font-semibold text-sm py-3 rounded-2xl disabled:opacity-30 transition-opacity active:scale-[0.98] shadow-[0_4px_14px_rgba(124,58,237,0.35)] mb-6"
         >
           {loading ? 'Analysing…' : '⚡ Extract Action Items'}
         </button>
 
         {/* ── Error ── */}
         {error && (
-          <div className="bg-red-950/25 border border-red-500/15 rounded-2xl p-3.5 mb-4 text-[#f87171] text-sm">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 mb-4 text-red-600 text-sm">
             {error}
           </div>
         )}
@@ -254,37 +256,37 @@ export default function Home() {
           <>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
-                <span className="text-[11px] font-semibold text-white/20 uppercase tracking-widest">
+                <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-widest">
                   {sorted.length} {sorted.length === 1 ? 'item' : 'items'}
                 </span>
                 <div className="flex gap-1.5">
                   {nHigh > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-950/50 text-[#f87171]">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#fee2e2] text-[#dc2626]">
                       {nHigh} high
                     </span>
                   )}
                   {nMedium > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950/50 text-[#fbbf24]">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#fef3c7] text-[#d97706]">
                       {nMedium} mid
                     </span>
                   )}
                   {nLow > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/50 text-[#34d399]">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#d1fae5] text-[#059669]">
                       {nLow} low
                     </span>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={clearItems}
-                  className="text-[11px] text-[#f87171]/40 hover:text-[#f87171]/70 px-2 py-1 rounded-lg hover:bg-red-950/20 transition-colors"
+                  className="text-[11px] font-semibold text-[#dc2626] bg-[#fee2e2] hover:bg-[#fecaca] px-3 py-1 rounded-full transition-colors"
                 >
                   Clear
                 </button>
                 <button
                   onClick={exportMd}
-                  className="text-[11px] text-white/25 hover:text-white/50 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]"
+                  className="text-[11px] font-semibold text-[#7c3aed] bg-[#ede9fe] hover:bg-[#ddd6fe] px-3 py-1 rounded-full transition-colors"
                 >
                   Export ↓
                 </button>
@@ -304,11 +306,11 @@ export default function Home() {
 
         {sorted.length === 0 && keysConfigured && (
           <div className="text-center py-16">
-            <p className="text-white/12 text-sm">No items for this day</p>
+            <p className="text-[#9ca3af] text-sm">No items for this day</p>
             {effectiveDate !== today && (
               <button
                 onClick={() => setSelectedDate(today)}
-                className="mt-3 text-[#4f8ef7]/40 text-xs hover:text-[#4f8ef7]/70 transition-colors"
+                className="mt-3 text-[#7c3aed]/60 text-xs hover:text-[#7c3aed] transition-colors"
               >
                 Go to today →
               </button>

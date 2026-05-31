@@ -47,10 +47,6 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
     finalSegmentsRef.current = '';
     isStoppingRef.current = false;
 
-    // Each call creates a fresh SpeechRecognition instance.
-    // Using continuous: false so sessions are short and bounded — on restart we
-    // create a NEW instance, which has no audio buffer from the previous session.
-    // This prevents both iOS and Android from re-processing already-transcribed audio.
     const launchSession = () => {
       const SRC = getSRConstructor();
       if (!SRC || isStoppingRef.current) return;
@@ -83,13 +79,9 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
 
       recognition.onend = () => {
         if (isStoppingRef.current) {
-          // User tapped Stop — commit the last finals and finish
           onTextChange(buildText(finalSegmentsRef.current, ''));
           setRecording(false);
         } else {
-          // Session ended naturally (silence/pause) — commit finals into base
-          // and launch a NEW instance so the next session starts with a clean
-          // audio buffer and cannot replay words from this session.
           baseTextRef.current = buildText(finalSegmentsRef.current, '');
           finalSegmentsRef.current = '';
           launchSession();
@@ -115,7 +107,7 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
 
   if (!supported) {
     return (
-      <p className="text-xs text-white/20 mb-3">
+      <p className="text-xs text-[#9ca3af] mb-3">
         Voice input requires Chrome or Safari.
       </p>
     );
@@ -127,13 +119,13 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
         onClick={recording ? stop : start}
         className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all border ${
           recording
-            ? 'bg-red-950/40 border-[#f87171]/25 text-[#f87171]'
-            : 'bg-[#0d1117] border-white/[0.08] text-white/55 hover:text-white/80 hover:border-white/[0.14]'
+            ? 'bg-[#fee2e2] border-[#fca5a5] text-[#dc2626]'
+            : 'bg-white border-[#ddd6fe] text-[#6b7280] hover:text-[#1e1b4b] hover:border-[#c4b5fd] shadow-sm'
         }`}
       >
         {recording ? (
           <>
-            <span className="w-2 h-2 bg-white rounded-full animate-pulse inline-block" />
+            <span className="w-2 h-2 bg-[#ef4444] rounded-full animate-pulse inline-block" />
             Stop recording
           </>
         ) : (
@@ -141,9 +133,9 @@ export default function VoiceRecorder({ currentText, onTextChange }: Props) {
         )}
       </button>
       {recording && (
-        <p className="text-xs text-[#4f8ef7]/50 mt-1.5">Listening… speak now</p>
+        <p className="text-xs text-[#7c3aed]/60 mt-1.5">Listening… speak now</p>
       )}
-      {error && <p className="text-xs text-red-400 mt-1.5">{error}</p>}
+      {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
     </div>
   );
 }

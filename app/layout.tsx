@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next';
-import { Syne } from 'next/font/google';
+import { Playfair_Display } from 'next/font/google';
 import './globals.css';
 
-const syne = Syne({
+const playfair = Playfair_Display({
   subsets: ['latin'],
-  weight: ['800'],
-  variable: '--font-syne',
+  weight: ['700'],
+  style: ['italic'],
+  variable: '--font-playfair',
   display: 'swap',
 });
 
@@ -15,13 +16,13 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'Action Items',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#07090f',
+  themeColor: '#f5f3ff',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -30,11 +31,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={syne.variable}>
+    <html lang="en" className={playfair.variable}>
       <head>
         <link rel="apple-touch-icon" href="/icon.svg" />
       </head>
-      <body className="bg-[#07090f] text-white min-h-screen font-sans antialiased">
+      <body className="bg-[#f5f3ff] text-[#1e1b4b] min-h-screen font-sans antialiased">
         {children}
       </body>
     </html>
