@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import VoiceRecorder from '../components/VoiceRecorder';
 import ActionItemCard from '../components/ActionItemCard';
 import SettingsModal from '../components/SettingsModal';
-import DateStrip from '../components/DateStrip';
 import { ActionItem } from '../lib/types';
 import { loadItems, saveItems, loadSettings, hasSettings } from '../lib/storage';
 
@@ -37,6 +36,14 @@ function GearIcon() {
   );
 }
 
+function CalendarIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="text-[#4f8ef7]/70 flex-shrink-0">
+      <path d="M4.5 1a.5.5 0 0 1 .5.5V2h6v-.5a.5.5 0 0 1 1 0V2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h1v-.5a.5.5 0 0 1 .5-.5zM2 5v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5H2z"/>
+    </svg>
+  );
+}
+
 export default function Home() {
   const [text, setText] = useState('');
   const [items, setItems] = useState<ActionItem[]>([]);
@@ -45,7 +52,6 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState({ openrouterKey: '' });
   const [selectedDate, setSelectedDate] = useState('');
-  const [weekOffset, setWeekOffset] = useState(0);
 
   useEffect(() => {
     setItems(loadItems());
@@ -57,13 +63,8 @@ export default function Home() {
 
   const refreshSettings = () => setSettings(loadSettings());
 
-  /* ── date helpers ── */
-  const effectiveDate = selectedDate || todayISO();
-
-  const itemCountByDate = items.reduce<Record<string, number>>((acc, item) => {
-    acc[item.date] = (acc[item.date] ?? 0) + 1;
-    return acc;
-  }, {});
+  const today = todayISO();
+  const effectiveDate = selectedDate || today;
 
   const dateItems = items.filter(i => i.date === effectiveDate);
   const sorted = [...dateItems].sort(
@@ -124,11 +125,12 @@ export default function Home() {
     saveItems(next);
   };
 
-  const clear = () => {
+  const clearText = () => setText('');
+
+  const clearItems = () => {
     const next = items.filter(i => i.date !== effectiveDate);
     setItems(next);
     saveItems(next);
-    setText('');
   };
 
   const exportMd = () => {
@@ -154,21 +156,16 @@ export default function Home() {
   const nMedium = dateItems.filter(i => i.priority === 'medium').length;
   const nLow    = dateItems.filter(i => i.priority === 'low').length;
   const keysConfigured = Boolean(settings.openrouterKey);
-  const today = todayISO();
 
   return (
     <>
-      <main className="max-w-[640px] mx-auto px-4 pt-6 pb-24">
+      <main className="max-w-[640px] mx-auto px-4 pt-8 pb-24">
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="text-[22px] font-bold tracking-tight text-[#e8edf5]">Action Items</h1>
-            <p className="text-[13px] text-white/30 mt-0.5">{formatDate(effectiveDate)}</p>
-          </div>
+        <div className="relative text-center mb-7">
           <button
             onClick={() => setSettingsOpen(true)}
-            className={`mt-0.5 p-2 rounded-xl transition-colors ${
+            className={`absolute right-0 top-0 p-2 rounded-xl transition-colors ${
               keysConfigured
                 ? 'text-white/20 hover:text-white/50 hover:bg-white/[0.05]'
                 : 'text-[#4f8ef7] hover:bg-[#4f8ef7]/10 animate-pulse'
@@ -177,6 +174,8 @@ export default function Home() {
           >
             <GearIcon />
           </button>
+          <h1 className="text-[24px] font-bold tracking-tight text-[#e8edf5]">Action Items</h1>
+          <p className="text-[12px] text-white/35 mt-1.5">Use voice or manual input for action items</p>
         </div>
 
         {/* ── Keys warning ── */}
@@ -190,45 +189,58 @@ export default function Home() {
           </button>
         )}
 
-        {/* ── Date strip ── */}
-        <DateStrip
-          selectedDate={effectiveDate}
-          onSelect={setSelectedDate}
-          itemCountByDate={itemCountByDate}
-          weekOffset={weekOffset}
-          onWeekChange={delta => setWeekOffset(w => w + delta)}
-          onResetToToday={() => { setWeekOffset(0); setSelectedDate(today); }}
-        />
-
-        {/* ── Divider ── */}
-        <div className="h-px bg-white/[0.05] my-5" />
-
         {/* ── Input ── */}
         <VoiceRecorder currentText={text} onTextChange={setText} />
 
-        <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) analyze(); }}
-          placeholder="Paste meeting notes, voice memo, or a task list…"
-          className="w-full h-36 bg-[#0a0e18] border border-white/[0.07] rounded-2xl p-4 text-sm text-[#e8edf5] placeholder:text-white/18 resize-none focus:outline-none focus:ring-1 focus:ring-[#4f8ef7]/35 mb-3 leading-relaxed"
-        />
-
-        <div className="flex gap-2.5 mb-6">
-          <button
-            onClick={analyze}
-            disabled={!text.trim() || loading}
-            className="flex-1 bg-gradient-to-r from-[#4f8ef7] to-[#6366f1] text-white font-semibold text-sm py-3 rounded-2xl disabled:opacity-30 transition-opacity active:scale-[0.98]"
-          >
-            {loading ? 'Analysing…' : '⚡ Extract Action Items'}
-          </button>
-          <button
-            onClick={clear}
-            className="px-5 py-3 bg-white/[0.05] text-white/35 hover:text-white/60 hover:bg-white/[0.08] text-sm rounded-2xl transition-colors active:scale-[0.98]"
-          >
-            Clear
-          </button>
+        <div className="relative mb-3">
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) analyze(); }}
+            placeholder="Paste meeting notes, voice memo, or a task list…"
+            className="w-full h-36 bg-[#0a0e18] border border-white/[0.07] rounded-2xl p-4 pr-8 text-sm text-[#e8edf5] placeholder:text-white/18 resize-none focus:outline-none focus:ring-1 focus:ring-[#4f8ef7]/35 leading-relaxed"
+          />
+          {text && (
+            <button
+              onClick={clearText}
+              className="absolute top-2.5 right-3 text-white/20 hover:text-white/55 transition-colors text-sm leading-none"
+              aria-label="Clear text"
+            >
+              ✕
+            </button>
+          )}
         </div>
+
+        {/* ── Date picker ── */}
+        <div className="flex items-center gap-2.5 mb-4">
+          <label className="relative flex items-center gap-2 px-3 py-2 bg-[#0d1117] border border-white/[0.08] rounded-xl cursor-pointer hover:border-white/[0.18] transition-colors group">
+            <CalendarIcon />
+            <span className="text-[13px] text-[#e8edf5]/75 select-none">{formatDate(effectiveDate)}</span>
+            <input
+              type="date"
+              value={effectiveDate}
+              onChange={e => { if (e.target.value) setSelectedDate(e.target.value); }}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+          </label>
+          {effectiveDate !== today && (
+            <button
+              onClick={() => setSelectedDate(today)}
+              className="text-xs text-[#4f8ef7]/60 hover:text-[#4f8ef7] px-2.5 py-1.5 rounded-lg hover:bg-[#4f8ef7]/[0.08] transition-colors"
+            >
+              Today
+            </button>
+          )}
+        </div>
+
+        {/* ── Analyze ── */}
+        <button
+          onClick={analyze}
+          disabled={!text.trim() || loading}
+          className="w-full bg-gradient-to-r from-[#4f8ef7] to-[#6366f1] text-white font-semibold text-sm py-3 rounded-2xl disabled:opacity-30 transition-opacity active:scale-[0.98] mb-6"
+        >
+          {loading ? 'Analysing…' : '⚡ Extract Action Items'}
+        </button>
 
         {/* ── Error ── */}
         {error && (
@@ -263,12 +275,20 @@ export default function Home() {
                   )}
                 </div>
               </div>
-              <button
-                onClick={exportMd}
-                className="text-[11px] text-white/25 hover:text-white/50 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]"
-              >
-                Export ↓
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={clearItems}
+                  className="text-[11px] text-[#f87171]/40 hover:text-[#f87171]/70 px-2 py-1 rounded-lg hover:bg-red-950/20 transition-colors"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={exportMd}
+                  className="text-[11px] text-white/25 hover:text-white/50 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]"
+                >
+                  Export ↓
+                </button>
+              </div>
             </div>
 
             {sorted.map(item => (
@@ -287,7 +307,7 @@ export default function Home() {
             <p className="text-white/12 text-sm">No items for this day</p>
             {effectiveDate !== today && (
               <button
-                onClick={() => { setSelectedDate(today); setWeekOffset(0); }}
+                onClick={() => setSelectedDate(today)}
                 className="mt-3 text-[#4f8ef7]/40 text-xs hover:text-[#4f8ef7]/70 transition-colors"
               >
                 Go to today →
