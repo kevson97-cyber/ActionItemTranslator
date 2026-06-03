@@ -122,20 +122,36 @@ class SaveRequest(BaseModel):
     title: str
     input_text: str
     items: list[dict]
+    date: str = ""   # YYYY-MM-DD, defaults to today
 
 @app.post("/sessions")
 def save_session(req: SaveRequest):
     sessions = _load_sessions()
+    session_date = req.date if req.date else datetime.now().strftime("%Y-%m-%d")
     session = {
         "id":         str(uuid.uuid4()),
         "title":      req.title,
         "input_text": req.input_text,
         "items":      req.items,
+        "date":       session_date,
         "created_at": datetime.now().isoformat(),
     }
     sessions.insert(0, session)
     _save_sessions(sessions)
     return session
+
+@app.get("/sessions/dates")
+def get_dates():
+    """Return all distinct dates that have sessions, sorted descending."""
+    sessions = _load_sessions()
+    dates = sorted({s.get("date", s["created_at"][:10]) for s in sessions}, reverse=True)
+    return dates
+
+@app.get("/sessions/by-date/{date}")
+def get_sessions_by_date(date: str):
+    """Return all sessions for a given YYYY-MM-DD date."""
+    sessions = _load_sessions()
+    return [s for s in sessions if s.get("date", s["created_at"][:10]) == date]
 
 class UpdateSessionRequest(BaseModel):
     items: list[dict]
