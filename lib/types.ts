@@ -12,4 +12,5 @@ export interface ActionItem {
   tasks: Task[];
   createdAt: string;
   date: string; // YYYY-MM-DD — the day this item belongs to
+  time?: string; // HH:MM (24h), optional — if unset, item is treated as all-day
 }

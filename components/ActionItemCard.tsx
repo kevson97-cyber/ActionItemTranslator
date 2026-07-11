@@ -2,6 +2,7 @@
 
 import { useState, useRef, KeyboardEvent } from 'react';
 import { ActionItem } from '../lib/types';
+import { buildGoogleCalendarUrl } from '../lib/calendar';
 
 const PRIORITY_STRIP: Record<string, string> = {
   high:   'bg-[#ef4444]',
@@ -35,6 +36,22 @@ function PencilIcon() {
       <path d="M11.013 1.427a1.75 1.75 0 012.474 0l1.086 1.086a1.75 1.75 0 010 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 01-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61zm1.414 1.06a.25.25 0 00-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 000-.354l-1.086-1.086zM11.189 6.25L9.75 4.81 3.34 11.22a.25.25 0 00-.065.108l-.647 2.268 2.268-.647a.25.25 0 00.108-.065L11.19 6.25z" />
     </svg>
   );
+}
+
+function CalendarExportIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3">
+      <rect x="2" y="3.5" width="12" height="10.5" rx="1.5" />
+      <path d="M2 6.5h12M5 2v2.5M11 2v2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function formatTime12h(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, '0')} ${period}`;
 }
 
 export default function ActionItemCard({ item, onChange, onDelete }: Props) {
@@ -105,10 +122,20 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
                   {item.priority}
                 </span>
               </div>
+              {item.time && (
+                <p className="text-[11px] text-[#9ca3af] mt-0.5">{formatTime12h(item.time)}</p>
+              )}
               {item.description && (
                 <p className="text-[12.5px] text-[#6b7280] mt-1 leading-relaxed">{item.description}</p>
               )}
             </div>
+            <button
+              onClick={() => window.open(buildGoogleCalendarUrl(item), '_blank', 'noopener,noreferrer')}
+              className="flex-shrink-0 text-[#9ca3af] hover:text-[#7c3aed] transition-colors p-1"
+              aria-label="Export to Google Calendar"
+            >
+              <CalendarExportIcon />
+            </button>
             <button
               onClick={startEdit}
               className="flex-shrink-0 text-[#9ca3af] hover:text-[#7c3aed] transition-colors p-1 -mr-1"
@@ -185,6 +212,20 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
               placeholder="Description (optional)"
               rows={2}
             />
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={draft.date}
+                onChange={e => setDraft({ ...draft, date: e.target.value })}
+                className="flex-1 bg-[#faf8ff] border border-[#ddd6fe] rounded-xl px-3 py-2 text-[12.5px] text-[#1e1b4b] focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/25"
+              />
+              <input
+                type="time"
+                value={draft.time ?? ''}
+                onChange={e => setDraft({ ...draft, time: e.target.value || undefined })}
+                className="flex-1 bg-[#faf8ff] border border-[#ddd6fe] rounded-xl px-3 py-2 text-[12.5px] text-[#1e1b4b] focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/25"
+              />
+            </div>
           </div>
         </div>
 
