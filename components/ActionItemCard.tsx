@@ -2,7 +2,7 @@
 
 import { useState, useRef, KeyboardEvent } from 'react';
 import { ActionItem } from '../lib/types';
-import { addToGoogleTasks } from '../lib/googleTasks';
+import { addToGoogleTasks, removeFromGoogleTasks } from '../lib/googleTasks';
 import { buildGoogleCalendarUrl } from '../lib/calendar';
 
 const PRIORITY_STRIP: Record<string, string> = {
@@ -76,21 +76,28 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ActionItem>(item);
   const [newTaskText, setNewTaskText] = useState('');
-  const [exportState, setExportState] = useState<'idle' | 'busy' | 'done'>('idle');
+  const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState('');
   const newTaskRef = useRef<HTMLInputElement>(null);
 
-  const exportToTasks = async () => {
-    if (exportState === 'busy') return;
-    setExportState('busy');
+  const synced = Boolean(item.googleTaskId);
+
+  const toggleGoogleTask = async () => {
+    if (exportBusy) return;
+    setExportBusy(true);
     setExportError('');
     try {
-      await addToGoogleTasks(item);
-      setExportState('done');
-      setTimeout(() => setExportState('idle'), 2000);
+      if (item.googleTaskId) {
+        await removeFromGoogleTasks(item.googleTaskId);
+        onChange({ ...item, googleTaskId: undefined });
+      } else {
+        const taskId = await addToGoogleTasks(item);
+        onChange({ ...item, googleTaskId: taskId });
+      }
     } catch (e: unknown) {
-      setExportState('idle');
-      setExportError(e instanceof Error ? e.message : 'Export failed');
+      setExportError(e instanceof Error ? e.message : 'Google Tasks sync failed');
+    } finally {
+      setExportBusy(false);
     }
   };
 
@@ -181,16 +188,16 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
               <CalendarExportIcon />
             </button>
             <button
-              onClick={exportToTasks}
-              disabled={exportState === 'busy'}
-              className={`flex-shrink-0 transition-colors p-1 ${
-                exportState === 'done'
-                  ? 'text-[#10b981]'
-                  : 'text-[#9ca3af] hover:text-[#7c3aed] disabled:opacity-40'
+              onClick={toggleGoogleTask}
+              disabled={exportBusy}
+              className={`flex-shrink-0 transition-colors p-1 disabled:opacity-40 ${
+                synced
+                  ? 'text-[#10b981] hover:text-[#dc2626]'
+                  : 'text-[#9ca3af] hover:text-[#7c3aed]'
               }`}
-              aria-label="Export to Google Tasks"
+              aria-label={synced ? 'Remove from Google Tasks' : 'Export to Google Tasks'}
             >
-              {exportState === 'done' ? <CheckIcon /> : <TaskExportIcon />}
+              {synced ? <CheckIcon /> : <TaskExportIcon />}
             </button>
             <button
               onClick={startEdit}

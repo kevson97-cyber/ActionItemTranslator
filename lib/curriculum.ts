@@ -98,9 +98,10 @@ export function seedCurriculum(): void {
     const fresh = buildCurriculumItems().filter(c => !existing.some(e => e.id === c.id));
     saveItems([...fresh, ...existing]);
     localStorage.setItem(SEED_FLAG, '1');
-    return;
   }
 
+  // Backfill runs unconditionally so curriculum items always carry the
+  // currently configured thread URL, even ones seeded before it was set.
   if (CLAUDE_THREAD_URL) {
     const items = loadItems();
     let changed = false;

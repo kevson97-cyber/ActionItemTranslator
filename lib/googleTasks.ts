@@ -81,7 +81,7 @@ async function getAccessToken(): Promise<string> {
   });
 }
 
-export async function addToGoogleTasks(item: ActionItem): Promise<void> {
+export async function addToGoogleTasks(item: ActionItem): Promise<string> {
   const token = await getAccessToken();
 
   // Google Tasks stores due as date-only (time of day is discarded),
@@ -111,6 +111,28 @@ export async function addToGoogleTasks(item: ActionItem): Promise<void> {
     if (res.status === 401) {
       accessToken = null; // stale token — next attempt re-prompts
       throw new Error('Google session expired — try exporting again');
+    }
+    throw new Error(`Google Tasks error (${res.status}) — ${(await res.text()).slice(0, 200)}`);
+  }
+
+  const created = await res.json();
+  if (!created?.id) throw new Error('Google Tasks did not return a task id');
+  return created.id;
+}
+
+export async function removeFromGoogleTasks(taskId: string): Promise<void> {
+  const token = await getAccessToken();
+
+  const res = await fetch(
+    `https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${encodeURIComponent(taskId)}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  // 404 means it was already deleted (e.g. removed manually in Google Tasks)
+  if (!res.ok && res.status !== 404) {
+    if (res.status === 401) {
+      accessToken = null;
+      throw new Error('Google session expired — try again');
     }
     throw new Error(`Google Tasks error (${res.status}) — ${(await res.text()).slice(0, 200)}`);
   }
