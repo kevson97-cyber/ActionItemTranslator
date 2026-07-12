@@ -17,12 +17,6 @@ const BADGE: Record<string, string> = {
   low:    'bg-[#d1fae5] text-[#059669]',
 };
 
-const PRIORITY_BTN_ACTIVE: Record<string, string> = {
-  high:   'bg-[#fee2e2] text-[#dc2626]',
-  medium: 'bg-[#fef3c7] text-[#d97706]',
-  low:    'bg-[#d1fae5] text-[#059669]',
-};
-
 const PRIORITIES = ['high', 'medium', 'low'] as const;
 
 interface Props {
@@ -266,7 +260,7 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
                   onClick={() => setDraft({ ...draft, priority: p })}
                   className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide transition-all ${
                     draft.priority === p
-                      ? PRIORITY_BTN_ACTIVE[p]
+                      ? BADGE[p]
                       : 'bg-[#f3f4f6] text-[#9ca3af] hover:bg-[#e5e7eb]'
                   }`}
                 >
