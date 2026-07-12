@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import VoiceRecorder from '../components/VoiceRecorder';
 import ActionItemCard from '../components/ActionItemCard';
 import SettingsModal from '../components/SettingsModal';
 import { ActionItem } from '../lib/types';
 import { loadItems, saveItems, loadSettings, hasSettings } from '../lib/storage';
+import { seedCurriculum } from '../lib/curriculum';
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -28,10 +29,43 @@ function formatDate(iso: string): string {
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 } as const;
 
+/* Downscale a photo client-side so the upload stays small enough for the API */
+function imageToDataUrl(file: File, maxDim = 1600, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Could not process image')); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not read image'));
+    };
+    img.src = url;
+  });
+}
+
 function GearIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
       <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4">
+      <path d="M2.5 6.5A1.5 1.5 0 0 1 4 5h2l1.2-1.8a1 1 0 0 1 .83-.45h3.94a1 1 0 0 1 .83.45L14 5h2a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 16 16H4a1.5 1.5 0 0 1-1.5-1.5v-8z" strokeLinejoin="round" />
+      <circle cx="10" cy="10.2" r="3" />
     </svg>
   );
 }
@@ -53,8 +87,10 @@ export default function Home() {
   const [settings, setSettings] = useState({ openrouterKey: '' });
   const [selectedDate, setSelectedDate] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    seedCurriculum();
     setItems(loadItems());
     const s = loadSettings();
     setSettings(s);
@@ -73,9 +109,9 @@ export default function Home() {
   );
 
   /* ── actions ── */
-  const analyze = async () => {
-    if (!text.trim() || loading) return;
-    if (!settings.openrouterKey) { setSettingsOpen(true); return; }
+  const runAnalysis = async (payload: { text?: string; image?: string }): Promise<boolean> => {
+    if (loading) return false;
+    if (!settings.openrouterKey) { setSettingsOpen(true); return false; }
     setLoading(true);
     setError('');
     try {
@@ -85,7 +121,7 @@ export default function Home() {
           'Content-Type': 'application/json',
           'x-openrouter-key': settings.openrouterKey,
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -106,11 +142,29 @@ export default function Home() {
       const merged = [...newItems, ...items];
       setItems(merged);
       saveItems(merged);
-      setText('');
+      return true;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Analysis failed');
+      return false;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const analyze = async () => {
+    if (!text.trim()) return;
+    if (await runAnalysis({ text })) setText('');
+  };
+
+  const onPhotoPicked = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-taking the same photo
+    if (!file) return;
+    try {
+      const image = await imageToDataUrl(file);
+      await runAnalysis({ image });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not read image');
     }
   };
 
@@ -164,6 +218,22 @@ export default function Home() {
 
         {/* ── Header ── */}
         <div className="relative text-center mb-7">
+          <button
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={loading}
+            className="absolute left-0 top-0 p-2 rounded-xl transition-colors text-[#1e1b4b]/25 hover:text-[#1e1b4b]/55 hover:bg-[#1e1b4b]/[0.05] disabled:opacity-40"
+            aria-label="Capture photo"
+          >
+            <CameraIcon />
+          </button>
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={onPhotoPicked}
+            className="hidden"
+          />
           <button
             onClick={() => setSettingsOpen(true)}
             className={`absolute right-0 top-0 p-2 rounded-xl transition-colors ${

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const MODEL = process.env.QWEN_MODEL ?? 'qwen/qwen3-30b-a3b';
+const VISION_MODEL = process.env.VISION_MODEL ?? 'qwen/qwen2.5-vl-72b-instruct';
 
 const SYSTEM_PROMPT = `You are an expert productivity assistant that extracts clear, specific action items from any spoken or written text — meeting notes, voice memos, brainstorm sessions, conversations, or task lists.
 
@@ -34,6 +35,21 @@ Return a JSON array where each element has:
 If an action item is simple (one step), leave "tasks" as an empty array [].
 Return ONLY the JSON array.`;
 
+const IMAGE_PROMPT = `Read all text visible in this image (handwritten notes, whiteboard, printed document, to-do list, screenshot, etc.) and extract all action items from it.
+
+Return a JSON array where each element has:
+{
+  "title": "Short action item title",
+  "description": "One sentence of context or goal",
+  "priority": "high" | "medium" | "low",
+  "tasks": [
+    {"task": "Specific sub-task description", "done": false}
+  ]
+}
+
+If an action item is simple (one step), leave "tasks" as an empty array [].
+Return ONLY the JSON array.`;
+
 export async function POST(req: NextRequest) {
   const apiKey =
     req.headers.get('x-openrouter-key') ?? process.env.OPENROUTER_API_KEY ?? '';
@@ -45,10 +61,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { text } = await req.json();
+  const { text, image } = await req.json();
 
-  if (!text?.trim()) {
-    return NextResponse.json({ error: 'No text provided' }, { status: 400 });
+  if (!text?.trim() && !image) {
+    return NextResponse.json({ error: 'No text or image provided' }, { status: 400 });
   }
 
   try {
@@ -61,11 +77,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const userContent: OpenAI.Chat.ChatCompletionUserMessageParam['content'] = image
+      ? [
+          { type: 'text', text: IMAGE_PROMPT },
+          { type: 'image_url', image_url: { url: image } },
+        ]
+      : USER_TEMPLATE(text.trim());
+
     const response = await client.chat.completions.create({
-      model: MODEL,
+      model: image ? VISION_MODEL : MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: USER_TEMPLATE(text.trim()) },
+        { role: 'user', content: userContent },
       ],
       temperature: 0.2,
       max_tokens: 3000,

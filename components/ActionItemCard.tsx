@@ -2,6 +2,7 @@
 
 import { useState, useRef, KeyboardEvent } from 'react';
 import { ActionItem } from '../lib/types';
+import { addToGoogleTasks } from '../lib/googleTasks';
 import { buildGoogleCalendarUrl } from '../lib/calendar';
 
 const PRIORITY_STRIP: Record<string, string> = {
@@ -38,11 +39,28 @@ function PencilIcon() {
   );
 }
 
+function TaskExportIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3">
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M5.5 8.2l1.8 1.8 3.2-3.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function CalendarExportIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3">
       <rect x="2" y="3.5" width="12" height="10.5" rx="1.5" />
       <path d="M2 6.5h12M5 2v2.5M11 2v2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M3 8.5l3.2 3.2L13 5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -58,7 +76,23 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ActionItem>(item);
   const [newTaskText, setNewTaskText] = useState('');
+  const [exportState, setExportState] = useState<'idle' | 'busy' | 'done'>('idle');
+  const [exportError, setExportError] = useState('');
   const newTaskRef = useRef<HTMLInputElement>(null);
+
+  const exportToTasks = async () => {
+    if (exportState === 'busy') return;
+    setExportState('busy');
+    setExportError('');
+    try {
+      await addToGoogleTasks(item);
+      setExportState('done');
+      setTimeout(() => setExportState('idle'), 2000);
+    } catch (e: unknown) {
+      setExportState('idle');
+      setExportError(e instanceof Error ? e.message : 'Export failed');
+    }
+  };
 
   const toggleDone = () => onChange({ ...item, done: !item.done });
   const toggleSubTask = (i: number) =>
@@ -128,13 +162,35 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
               {item.description && (
                 <p className="text-[12.5px] text-[#6b7280] mt-1 leading-relaxed">{item.description}</p>
               )}
+              {item.threadUrl && (
+                <a
+                  href={item.threadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-1.5 text-[11.5px] font-medium text-[#7c3aed] hover:text-[#6d28d9] transition-colors"
+                >
+                  Continue in Claude →
+                </a>
+              )}
             </div>
             <button
               onClick={() => window.open(buildGoogleCalendarUrl(item), '_blank', 'noopener,noreferrer')}
               className="flex-shrink-0 text-[#9ca3af] hover:text-[#7c3aed] transition-colors p-1"
-              aria-label="Export to Google Calendar"
+              aria-label="Add to Google Calendar"
             >
               <CalendarExportIcon />
+            </button>
+            <button
+              onClick={exportToTasks}
+              disabled={exportState === 'busy'}
+              className={`flex-shrink-0 transition-colors p-1 ${
+                exportState === 'done'
+                  ? 'text-[#10b981]'
+                  : 'text-[#9ca3af] hover:text-[#7c3aed] disabled:opacity-40'
+              }`}
+              aria-label="Export to Google Tasks"
+            >
+              {exportState === 'done' ? <CheckIcon /> : <TaskExportIcon />}
             </button>
             <button
               onClick={startEdit}
@@ -162,6 +218,12 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
                 </li>
               ))}
             </ul>
+          )}
+
+          {exportError && (
+            <p className="mt-2.5 text-[11.5px] text-[#dc2626] bg-[#fee2e2] rounded-lg px-2.5 py-1.5">
+              {exportError}
+            </p>
           )}
         </div>
       </div>
