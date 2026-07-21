@@ -1,17 +1,8 @@
 import { ActionItem } from './types';
-
-function addDays(dateStr: string, days: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
-  date.setUTCDate(date.getUTCDate() + days);
-  const yyyy = date.getUTCFullYear();
-  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(date.getUTCDate()).padStart(2, '0');
-  return `${yyyy}${mm}${dd}`;
-}
+import { addDaysISO, toCompactDate } from './date';
 
 export function buildGoogleCalendarUrl(item: ActionItem): string {
-  const bareDate = item.date.replace(/-/g, '');
+  const bareDate = toCompactDate(item.date);
   let dates: string;
   let ctz = '';
 
@@ -27,7 +18,7 @@ export function buildGoogleCalendarUrl(item: ActionItem): string {
     dates = `${startStamp}/${endStamp}`;
     ctz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   } else {
-    dates = `${bareDate}/${addDays(item.date, 1)}`;
+    dates = `${bareDate}/${toCompactDate(addDaysISO(item.date, 1))}`;
   }
 
   const details = [item.description, ...item.tasks.map(t => `• ${t.task}`)]

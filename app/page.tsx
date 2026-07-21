@@ -1,30 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, ChangeEvent } from 'react';
 import VoiceRecorder from '../components/VoiceRecorder';
 import ActionItemCard from '../components/ActionItemCard';
 import SettingsModal from '../components/SettingsModal';
 import { ActionItem } from '../lib/types';
 import { loadItems, saveItems, loadSettings, hasSettings } from '../lib/storage';
 import { seedCurriculum } from '../lib/curriculum';
+import { todayISO, formatLongDate } from '../lib/date';
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function formatDate(iso: string): string {
-  if (!iso) return '';
-  const [yyyy, mm, dd] = iso.split('-').map(Number);
-  return new Date(yyyy, mm - 1, dd).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
 }
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 } as const;
@@ -87,6 +73,7 @@ export default function Home() {
   const [settings, setSettings] = useState({ openrouterKey: '' });
   const [selectedDate, setSelectedDate] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -96,16 +83,31 @@ export default function Home() {
     setSettings(s);
     if (!hasSettings()) setSettingsOpen(true);
     setSelectedDate(todayISO());
+    setLoaded(true);
   }, []);
+
+  // Persist on every change to items. Gated on `loaded` so we never overwrite
+  // stored items with the empty starting state (safe under StrictMode, which
+  // re-runs effects but leaves `loaded` false until the mount effect has run).
+  useEffect(() => {
+    if (loaded) saveItems(items);
+  }, [items, loaded]);
 
   const refreshSettings = () => setSettings(loadSettings());
 
   const today = todayISO();
   const effectiveDate = selectedDate || today;
 
-  const dateItems = items.filter(i => i.date === effectiveDate);
-  const sorted = [...dateItems].sort(
-    (a, b) => (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1)
+  const dateItems = useMemo(
+    () => items.filter(i => i.date === effectiveDate),
+    [items, effectiveDate]
+  );
+  const sorted = useMemo(
+    () =>
+      [...dateItems].sort(
+        (a, b) => (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1)
+      ),
+    [dateItems]
   );
 
   /* ── actions ── */
@@ -139,9 +141,7 @@ export default function Home() {
         })
       );
 
-      const merged = [...newItems, ...items];
-      setItems(merged);
-      saveItems(merged);
+      setItems(prev => [...newItems, ...prev]);
       return true;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Analysis failed');
@@ -168,24 +168,21 @@ export default function Home() {
     }
   };
 
-  const updateItem = (updated: ActionItem) => {
-    const next = items.map(item => item.id === updated.id ? updated : item);
-    setItems(next);
-    saveItems(next);
-  };
+  // Stable identity (functional updaters, no `items` closure) so the memoized
+  // ActionItemCards don't re-render when unrelated state (e.g. the textarea)
+  // changes.
+  const updateItem = useCallback((updated: ActionItem) => {
+    setItems(prev => prev.map(item => item.id === updated.id ? updated : item));
+  }, []);
 
-  const deleteItem = (id: string) => {
-    const next = items.filter(item => item.id !== id);
-    setItems(next);
-    saveItems(next);
-  };
+  const deleteItem = useCallback((id: string) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+  }, []);
 
   const clearText = () => setText('');
 
   const clearItems = () => {
-    const next = items.filter(i => i.date !== effectiveDate);
-    setItems(next);
-    saveItems(next);
+    setItems(prev => prev.filter(i => i.date !== effectiveDate));
   };
 
   const exportMd = () => {
@@ -207,9 +204,15 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
-  const nHigh   = dateItems.filter(i => i.priority === 'high').length;
-  const nMedium = dateItems.filter(i => i.priority === 'medium').length;
-  const nLow    = dateItems.filter(i => i.priority === 'low').length;
+  const { nHigh, nMedium, nLow } = useMemo(() => {
+    const counts = { nHigh: 0, nMedium: 0, nLow: 0 };
+    for (const i of dateItems) {
+      if (i.priority === 'high') counts.nHigh++;
+      else if (i.priority === 'medium') counts.nMedium++;
+      else if (i.priority === 'low') counts.nLow++;
+    }
+    return counts;
+  }, [dateItems]);
   const keysConfigured = Boolean(settings.openrouterKey);
 
   return (
@@ -288,7 +291,7 @@ export default function Home() {
         <div className="flex items-center gap-2.5 mb-4">
           <label className="relative flex items-center gap-2 px-3 py-2 bg-white border border-[#ddd6fe] rounded-xl cursor-pointer hover:border-[#c4b5fd] transition-colors shadow-sm">
             <CalendarIcon />
-            <span className="text-[13px] text-[#1e1b4b]/80 select-none">{formatDate(effectiveDate)}</span>
+            <span className="text-[13px] text-[#1e1b4b]/80 select-none">{formatLongDate(effectiveDate)}</span>
             <input
               type="date"
               value={effectiveDate}
@@ -369,7 +372,7 @@ export default function Home() {
                 key={item.id}
                 item={item}
                 onChange={updateItem}
-                onDelete={() => deleteItem(item.id)}
+                onDelete={deleteItem}
               />
             ))}
           </>
@@ -397,7 +400,7 @@ export default function Home() {
           <div className="relative bg-white border border-[#ede9fe] rounded-2xl p-6 w-full max-w-sm shadow-[0_8px_32px_rgba(124,58,237,0.15)]">
             <h3 className="text-[15px] font-semibold text-[#1e1b4b] mb-1">Clear action items?</h3>
             <p className="text-[13px] text-[#6b7280] mb-5">
-              This will remove all items for {formatDate(effectiveDate)}. This can&apos;t be undone.
+              This will remove all items for {formatLongDate(effectiveDate)}. This can&apos;t be undone.
             </p>
             <div className="flex gap-2">
               <button

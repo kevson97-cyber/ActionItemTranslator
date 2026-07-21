@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, KeyboardEvent } from 'react';
+import { memo, useState, useRef, KeyboardEvent } from 'react';
 import { ActionItem } from '../lib/types';
 import { addToGoogleTasks, removeFromGoogleTasks } from '../lib/googleTasks';
 import { buildGoogleCalendarUrl } from '../lib/calendar';
@@ -22,7 +22,7 @@ const PRIORITIES = ['high', 'medium', 'low'] as const;
 interface Props {
   item: ActionItem;
   onChange: (updated: ActionItem) => void;
-  onDelete: () => void;
+  onDelete: (id: string) => void;
 }
 
 function PencilIcon() {
@@ -66,7 +66,7 @@ function formatTime12h(time: string): string {
   return `${hour}:${String(m).padStart(2, '0')} ${period}`;
 }
 
-export default function ActionItemCard({ item, onChange, onDelete }: Props) {
+function ActionItemCard({ item, onChange, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ActionItem>(item);
   const [newTaskText, setNewTaskText] = useState('');
@@ -365,7 +365,7 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
             Cancel
           </button>
           <button
-            onClick={onDelete}
+            onClick={() => onDelete(item.id)}
             className="px-3 py-2 text-[#dc2626]/60 hover:text-[#dc2626] hover:bg-[#fee2e2] text-xs rounded-xl transition-colors"
           >
             Delete
@@ -375,3 +375,5 @@ export default function ActionItemCard({ item, onChange, onDelete }: Props) {
     </div>
   );
 }
+
+export default memo(ActionItemCard);

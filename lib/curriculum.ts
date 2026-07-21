@@ -1,6 +1,7 @@
 import { ActionItem } from './types';
 import { loadItems, saveItems } from './storage';
 import { CLAUDE_THREAD_URL } from './config';
+import { addDaysISO } from './date';
 
 const SEED_FLAG = 'curriculum_seeded_v1';
 const START_DATE = '2026-07-11'; // day 1 of the 30-day prep track
@@ -52,9 +53,7 @@ function priorityForDay(day: number): ActionItem['priority'] {
 }
 
 function dateForDay(day: number): string {
-  const [y, m, d] = START_DATE.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d + day - 1));
-  return date.toISOString().slice(0, 10);
+  return addDaysISO(START_DATE, day - 1);
 }
 
 function buildCurriculumItems(): ActionItem[] {
@@ -93,25 +92,31 @@ function buildCurriculumItems(): ActionItem[] {
 export function seedCurriculum(): void {
   if (typeof window === 'undefined') return;
 
+  // Single read; both the one-time seed and the thread-URL backfill operate on
+  // this array, and we write back at most once.
+  let items = loadItems();
+  let changed = false;
+
   if (!localStorage.getItem(SEED_FLAG)) {
-    const existing = loadItems();
-    const fresh = buildCurriculumItems().filter(c => !existing.some(e => e.id === c.id));
-    saveItems([...fresh, ...existing]);
+    const fresh = buildCurriculumItems().filter(c => !items.some(e => e.id === c.id));
+    if (fresh.length) {
+      items = [...fresh, ...items];
+      changed = true;
+    }
     localStorage.setItem(SEED_FLAG, '1');
   }
 
-  // Backfill runs unconditionally so curriculum items always carry the
-  // currently configured thread URL, even ones seeded before it was set.
+  // Backfill so curriculum items always carry the currently configured thread
+  // URL, even ones seeded before it was set.
   if (CLAUDE_THREAD_URL) {
-    const items = loadItems();
-    let changed = false;
-    const next = items.map(item => {
+    items = items.map(item => {
       if (item.id.startsWith('curr-') && item.threadUrl !== CLAUDE_THREAD_URL) {
         changed = true;
         return { ...item, threadUrl: CLAUDE_THREAD_URL };
       }
       return item;
     });
-    if (changed) saveItems(next);
   }
+
+  if (changed) saveItems(items);
 }

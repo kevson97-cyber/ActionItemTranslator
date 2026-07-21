@@ -28,3 +28,7 @@ public/workbox-*.js.map
 
 .vercel
 .env*
+
+# BMad tooling (regenerable framework install — keep local, not in repo)
+.claude/skills/
+_bmad/
